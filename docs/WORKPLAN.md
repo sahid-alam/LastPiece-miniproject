@@ -1,8 +1,8 @@
 # Work plan and module ownership
 
-Tasks, due dates and status live in the team doc, not here, so they are not
-kept in two places:
-**[LastPiece — Team Plan & Task Board](https://docs.google.com/document/d/1yzAANbDNt24_akfhivCyf1QI8SzZgm-TyC8iI8K_i5o/edit)**
+Plan and due dates live in the team doc; task status lives in GitHub issues
+(https://github.com/sahid-alam/LastPiece-miniproject/issues). Team doc:
+**[LastPiece — Team Plan (v2)](https://docs.google.com/document/d/19wkNwTWie4CMqVADh_WS9QJAU1NDvy3reeXPg1vkyRM/edit)** (includes the GitHub how-to and a starter AI prompt per teammate)
 
 Key dates: Review 1 on **13 Oct 2026** (target 50%), Final on **28 Oct 2026**.
 
