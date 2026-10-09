@@ -1,0 +1,14 @@
+# Runs the test suite on every push and PR. Tests use synthetic fixtures only,
+# so numpy + pytest is all they need (no torch, no dataset download).
+name: tests
+on: [push, pull_request]
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install "numpy>=1.26,<3" pytest
+      - run: pytest

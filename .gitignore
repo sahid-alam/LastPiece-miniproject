@@ -1,0 +1,18 @@
+# Data and build outputs: every teammate makes their own (docs/DATA.md)
+data/raw/*
+data/processed/*
+!data/**/.gitkeep
+*.npy
+*.faiss
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/

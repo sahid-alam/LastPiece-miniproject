@@ -1,0 +1,21 @@
+# Core. Everything here is free and runs locally; no API keys anywhere.
+numpy>=1.26,<3
+pandas>=2.1             # manifest (CSV)
+pyyaml>=6.0
+
+# Encoders. Weights download once from Hugging Face, then fully offline.
+torch>=2.1              # CPU build is fine: pip install torch --index-url https://download.pytorch.org/whl/cpu
+transformers>=4.38
+pillow>=10.0
+
+# Vector search
+faiss-cpu>=1.7.4
+
+# Demo
+streamlit>=1.31
+
+# Plots for the report
+matplotlib>=3.8
+
+# Dev
+pytest>=8.0

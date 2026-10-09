@@ -1,0 +1,51 @@
+# Central configuration. Never hardcode these values in function bodies.
+# Only things we actually vary or might point somewhere else live here;
+# fixed facts (512-d, flat index, 77-token limit) live in the code that owns them.
+
+project:
+  name: lastpiece
+  random_seed: 42
+
+paths:
+  raw_dir: data/raw                       # Fashion Product Images (small), unzipped
+  manifest: data/processed/manifest.csv
+  image_embeddings: data/processed/emb_image.npy
+  text_embeddings: data/processed/emb_text.npy
+  item_ids: data/processed/item_ids.json  # row order of both embedding files
+  results_dir: data/processed/results
+
+encoder:
+  # openai/clip-vit-base-patch32 for the base-CLIP ablation run
+  model_name: patrickjohncyh/fashion-clip
+  device: cpu              # "cuda"/"mps" only to speed up batch encoding
+  batch_size: 32
+
+fusion:
+  # v = normalize((1 - alpha) * v_img + alpha * v_txt)
+  # 0.0 = image only, 1.0 = text only
+  alpha: 0.5
+  alpha_sweep: [0.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0]
+
+retrieval:
+  k: 5                    # results shown to the user
+  n_candidates: 50        # over-fetch depth, must be >> k
+  max_candidates: 500     # substitution ceiling before giving up
+
+rerank:
+  # MMR: score = lambda * sim(q, i) - (1 - lambda) * max sim(i, selected)
+  # 1.0 = pure relevance (this IS "MMR off", D14), lower = more diverse
+  lambda_: 0.7
+  lambda_sweep: [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+
+simulation:
+  # D16: n_users * queries_per_user item-to-item queries; deplete_fraction of
+  # the catalogue sells over the session so late-session states are reached.
+  n_users: 200
+  queries_per_user: 5
+  deplete_fraction: 0.9
+
+evaluation:
+  relevance:
+    # D12: same category + at least N matching secondary attributes
+    secondary_attributes: [colour, usage]
+    min_secondary_matches: 1
