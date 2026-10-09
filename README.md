@@ -4,13 +4,6 @@
 
 Mini project, BMSIT&M, Dept of AI & ML, BAI506, AY 2026-27.
 
-| Sl | USN | Name |
-|----|-----|------|
-| 1 | 1TD24AI176 | Swati Agarwal |
-| 2 | 1TD24AI156 | Sahid Alam |
-| 3 | 1BY24AI197 | Madiha Iram |
-| 4 | 1TD24AI096 | Lucky Dhawan |
-
 ## What this is
 
 A recommender for online shops where **every listing is one physical unit**:
