@@ -34,7 +34,13 @@ from __future__ import annotations
 import io
 import os
 from pathlib import Path
+import sys
 from typing import Callable
+
+# Ensure repository root is on sys.path so 'app.*' and 'src.*' resolve cleanly
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 import numpy as np
 import streamlit as st
@@ -44,7 +50,7 @@ import yaml
 # Configuration                                                                #
 # --------------------------------------------------------------------------- #
 
-_CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
+_CONFIG_PATH = _REPO_ROOT / "config.yaml"
 
 
 @st.cache_resource
