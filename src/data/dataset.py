@@ -1,6 +1,5 @@
 """Fashion Product Images loading, manifest and relevance ground truth.
 
-STATUS: STUB. Owner: Track A. Implement the TODOs below.
 
 Dataset: Fashion Product Images (small), about 44k single products on plain
 backgrounds, each with a short product title and category labels. See
@@ -28,7 +27,7 @@ __all__ = ["MANIFEST_COLUMNS", "build_manifest", "load_manifest", "relevant_item
 MANIFEST_COLUMNS = ["item_id", "image_path", "description", "category", "colour", "usage"]
 
 
-def build_manifest(raw_dir, out_path):
+def build_manifest(raw_dir: str | Path, out_path: str | Path):
     """Parse styles.csv + images/ into the manifest CSV."""
     import pandas as pd
     raw_dir = Path(raw_dir)
@@ -84,7 +83,7 @@ def build_manifest(raw_dir, out_path):
     return df
 
 
-def load_manifest(path):
+def load_manifest(path: str | Path):
     """Read the manifest CSV and validate its columns."""
     import pandas as pd
     df = pd.read_csv(path, dtype=str).fillna("")
@@ -110,7 +109,7 @@ def _index(manifest):
     return _INDEX["by_id"], _INDEX["by_category"]
 
 
-def relevant_items(manifest, query_id, secondary_attributes, min_secondary_matches):
+def relevant_items(manifest, query_id: str, secondary_attributes: list[str], min_secondary_matches: int) -> set[str]:
     """Ground-truth relevant items for one query (docs/DECISIONS.md D12).
 
     Relevant = same category AND at least min_secondary_matches of the
