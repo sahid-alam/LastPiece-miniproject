@@ -22,7 +22,6 @@ Manifest columns (frozen; changing one means telling the whole group):
 from __future__ import annotations
 
 from pathlib import Path
-import pandas as pd
 
 __all__ = ["MANIFEST_COLUMNS", "build_manifest", "load_manifest", "relevant_items"]
 
@@ -31,6 +30,7 @@ MANIFEST_COLUMNS = ["item_id", "image_path", "description", "category", "colour"
 
 def build_manifest(raw_dir, out_path):
     """Parse styles.csv + images/ into the manifest CSV."""
+    import pandas as pd
     raw_dir = Path(raw_dir)
     out_path = Path(out_path)
 
@@ -86,6 +86,7 @@ def build_manifest(raw_dir, out_path):
 
 def load_manifest(path):
     """Read the manifest CSV and validate its columns."""
+    import pandas as pd
     df = pd.read_csv(path, dtype=str).fillna("")
     missing = [c for c in MANIFEST_COLUMNS if c not in df.columns]
     if missing:

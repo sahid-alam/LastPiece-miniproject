@@ -1,5 +1,6 @@
-import pandas as pd
 import pytest
+
+pd = pytest.importorskip("pandas")
 
 from src.data.dataset import MANIFEST_COLUMNS, relevant_items
 
