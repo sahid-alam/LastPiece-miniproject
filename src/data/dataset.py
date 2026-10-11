@@ -22,53 +22,114 @@ Manifest columns (frozen; changing one means telling the whole group):
 from __future__ import annotations
 
 from pathlib import Path
+import pandas as pd
 
 __all__ = ["MANIFEST_COLUMNS", "build_manifest", "load_manifest", "relevant_items"]
 
 MANIFEST_COLUMNS = ["item_id", "image_path", "description", "category", "colour", "usage"]
 
 
-def build_manifest(raw_dir: str | Path, out_path: str | Path):
-    """Parse styles.csv + images/ into the manifest CSV.
+def build_manifest(raw_dir, out_path):
+    """Parse styles.csv + images/ into the manifest CSV."""
+    raw_dir = Path(raw_dir)
+    out_path = Path(out_path)
 
-    TODO(owner): implement.
-        - pandas.read_csv(raw_dir / "styles.csv", on_bad_lines="skip"):
-          a few rows have stray commas in productDisplayName. Log how many
-          were skipped; the report should state it.
-        - drop rows whose image file does not exist, and log the count
-        - item_id as str, empty strings (not NaN) for missing text fields
-        - assert item_id is unique
-        - write CSV with exactly MANIFEST_COLUMNS, return the DataFrame
-    """
-    raise NotImplementedError("build_manifest")
+    # Rows with stray commas break the CSV; skip them but count them.
+    skipped = []
+
+    def _skip(bad_line):
+        skipped.append(bad_line)
+        return None  # None tells pandas to drop the line
+
+    df = pd.read_csv(
+        raw_dir / "styles.csv",
+        dtype=str,
+        engine="python",
+        on_bad_lines=_skip,
+    )
+
+    rename = {
+        "id": "item_id",
+        "productDisplayName": "description",
+        "articleType": "category",
+        "baseColour": "colour",
+        "usage": "usage",
+    }
+    missing = [c for c in rename if c not in df.columns]
+    if missing:
+        raise ValueError(f"styles.csv is missing columns: {missing}")
+    df = df[list(rename)].rename(columns=rename)
+
+    # Empty strings, not NaN, for missing text.
+    df = df.fillna("")
+    for col in df.columns:
+        df[col] = df[col].str.strip()
+
+    df["image_path"] = "images/" + df["item_id"] + ".jpg"
+
+    # Drop rows whose image file does not exist.
+    has_image = df["image_path"].map(lambda p: (raw_dir / p).is_file())
+    n_dropped = int((~has_image).sum())
+    df = df[has_image].reset_index(drop=True)
+
+    assert df["item_id"].is_unique, "item_id must be unique"
+
+    df = df[MANIFEST_COLUMNS]
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(out_path, index=False)
+
+    print(f"Rows skipped (malformed): {len(skipped)}")
+    print(f"Rows dropped (no image):  {n_dropped}")
+    print(f"Final manifest rows:      {len(df)}")
+    return df
 
 
-def load_manifest(path: str | Path):
-    """Read the manifest CSV and validate its columns.
+def load_manifest(path):
+    """Read the manifest CSV and validate its columns."""
+    df = pd.read_csv(path, dtype=str).fillna("")
+    missing = [c for c in MANIFEST_COLUMNS if c not in df.columns]
+    if missing:
+        raise ValueError(f"Manifest {path} is missing columns: {missing}")
+    return df
 
-    TODO(owner): implement. dtype=str for every column, fillna(""). Raise a
-    clear error naming any missing column; a cryptic KeyError three modules
-    downstream wastes a teammate's afternoon.
-    """
-    raise NotImplementedError("load_manifest")
+
+_INDEX = {"manifest": None, "by_id": None, "by_category": None}
 
 
-def relevant_items(
-    manifest,
-    query_id: str,
-    secondary_attributes: list[str],
-    min_secondary_matches: int,
-) -> set[str]:
+def _index(manifest):
+    # Build the lookup once per manifest, not once per query.
+    if _INDEX["manifest"] is not manifest:
+        records = manifest.to_dict("records")
+        by_category = {}
+        for r in records:
+            by_category.setdefault(r["category"], []).append(r)
+        _INDEX["manifest"] = manifest
+        _INDEX["by_id"] = {r["item_id"]: r for r in records}
+        _INDEX["by_category"] = by_category
+    return _INDEX["by_id"], _INDEX["by_category"]
+
+
+def relevant_items(manifest, query_id, secondary_attributes, min_secondary_matches):
     """Ground-truth relevant items for one query (docs/DECISIONS.md D12).
 
     Relevant = same category AND at least min_secondary_matches of the
     secondary attributes equal (empty values never match). The query item
     itself is excluded.
-
-    A stated proxy, not click data. It mildly favours content-based methods by
-    construction; the report says so openly.
-
-    TODO(owner): implement. Called once per query in a 1000-query session, so
-    pre-group the manifest by category rather than scanning 44k rows each time.
     """
-    raise NotImplementedError("relevant_items")
+    by_id, by_category = _index(manifest)
+    query = by_id[query_id]
+    if query["category"] == "":
+        return set()
+
+    relevant = set()
+    for row in by_category[query["category"]]:
+        if row["item_id"] == query_id:
+            continue
+        matches = sum(
+            1
+            for attr in secondary_attributes
+            if query[attr] != "" and row[attr] == query[attr]
+        )
+        if matches >= min_secondary_matches:
+            relevant.add(row["item_id"])
+    return relevant

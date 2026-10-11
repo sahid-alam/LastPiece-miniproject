@@ -11,14 +11,14 @@ the reviewers may ask where the data came from.
 
 | Field | Value |
 |---|---|
-| Source URL | _fill in (Kaggle: paramaggarwal/fashion-product-images-small)_ |
-| Accessed | _fill in_ |
-| Licence | _fill in from the dataset page_ |
-| Rows in styles.csv | _fill in_ |
-| Rows skipped (malformed) | _fill in_ |
-| Rows dropped (no image) | _fill in_ |
-| Final manifest rows | _fill in_ |
-| Size on disk | _fill in_ |
+| Source URL | https://www.kaggle.com/datasets/paramaggarwal/fashion-product-images-small |
+| Accessed | 2026-10-11 |
+| Licence | MIT |
+| Rows in styles.csv | 44446 |
+| Rows skipped (malformed) | 22 |
+| Rows dropped (no image) | 5 |
+| Final manifest rows | 44419 |
+| Size on disk | 632 MB |
 
 ## Getting it
 
