@@ -22,6 +22,7 @@ Design notes:
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Sequence
 
@@ -30,6 +31,33 @@ import numpy as np
 from src.encoders.fusion import fuse_batch
 
 __all__ = ["VectorIndex"]
+
+
+def _import_faiss():
+    """Import faiss so it can live in the same process as torch on macOS.
+
+    torch and faiss each ship their own copy of the OpenMP runtime. When both
+    load into one process (the demo does: text search needs the encoder, every
+    search needs the index), macOS builds crash with a segfault unless
+    (1) torch initialises OpenMP first, (2) the duplicate-runtime check is
+    relaxed, and (3) faiss runs single-threaded. Tested on Apple Silicon: same
+    results as the faiss-only process, ~3 ms per search at 44k items.
+
+    ponytail: KMP_DUPLICATE_LIB_OK is LLVM's documented "unsafe" escape hatch.
+    Ceiling: it relies on both runtimes behaving when one is idle. Upgrade
+    path if it ever misbehaves: replace the flat index with a numpy matmul
+    (exact same results at our scale) or install both libraries from
+    conda-forge so they share one OpenMP.
+    """
+    os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+    try:
+        import torch  # noqa: F401  only for its side effect: OpenMP init order
+    except ImportError:
+        pass  # no torch (e.g. CI, the experiment runner on a lean install): no clash
+    import faiss
+
+    faiss.omp_set_num_threads(1)
+    return faiss
 
 
 class VectorIndex:
@@ -49,7 +77,7 @@ class VectorIndex:
         candidate vectors, and fetching them back out of FAISS row by row is
         slower than holding the array. At 44k x 512 float32 that is ~90 MB.
         """
-        import faiss  # local import: modules that only need the type stay light
+        faiss = _import_faiss()
 
         vectors = np.ascontiguousarray(vectors, dtype=np.float32)
         if vectors.ndim != 2 or vectors.shape[1] != self.dim:
