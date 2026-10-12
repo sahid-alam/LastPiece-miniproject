@@ -65,6 +65,13 @@ def test_get_vector_round_trip(index, vecs):
     np.testing.assert_allclose(index.get_vector("i12"), vecs[12])
 
 
+def test_all_item_ids_is_a_copy_in_index_order(index, ids):
+    got = index.all_item_ids()
+    assert got == ids
+    got.append("intruder")
+    assert len(index) == len(ids)
+
+
 def test_build_rejects_duplicate_ids(vecs, ids):
     with pytest.raises(ValueError, match="duplicate"):
         VectorIndex(dim=DIM).build(vecs, ids[:-1] + [ids[0]])

@@ -104,6 +104,11 @@ class VectorIndex:
         """
         return self._vectors[self._pos[item_id]]
 
+    def all_item_ids(self) -> list[str]:
+        """Every indexed ID, e.g. to seed a full Stock. Same name as the demo's
+        FakeIndex so the app swaps one for the other without a branch."""
+        return list(self._item_ids)
+
     @classmethod
     def from_embeddings(
         cls,
