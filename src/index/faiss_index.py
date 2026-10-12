@@ -43,6 +43,11 @@ def _import_faiss():
     relaxed, and (3) faiss runs single-threaded. Tested on Apple Silicon: same
     results as the faiss-only process, ~3 ms per search at 44k items.
 
+    "Single-threaded" must hold in every thread: OpenMP's thread count is a
+    per-thread setting, and Streamlit runs each rerun on its own thread. So
+    OMP_NUM_THREADS sets the process-wide default before either runtime starts,
+    and search() re-applies the limit on whichever thread calls it.
+
     ponytail: KMP_DUPLICATE_LIB_OK is LLVM's documented "unsafe" escape hatch.
     Ceiling: it relies on both runtimes behaving when one is idle. Upgrade
     path if it ever misbehaves: replace the flat index with a numpy matmul
@@ -50,6 +55,7 @@ def _import_faiss():
     conda-forge so they share one OpenMP.
     """
     os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+    os.environ.setdefault("OMP_NUM_THREADS", "1")
     try:
         import torch  # noqa: F401  only for its side effect: OpenMP init order
     except ImportError:
@@ -90,6 +96,7 @@ class VectorIndex:
         if len(pos) != len(item_ids):
             raise ValueError("duplicate item IDs; every listing must be unique")
 
+        self._faiss = faiss
         self._index = faiss.IndexFlatIP(self.dim)
         self._index.add(vectors)
         self._item_ids = list(item_ids)
@@ -118,6 +125,7 @@ class VectorIndex:
             return [], self._vectors[:0], np.empty(0, dtype=np.float32)
 
         q = np.ascontiguousarray(query_vec.reshape(1, -1), dtype=np.float32)
+        self._faiss.omp_set_num_threads(1)  # per-thread setting; see _import_faiss
         scores, idx = self._index.search(q, depth)
         idx, scores = idx[0], scores[0]
         keep = idx >= 0  # FAISS pads with -1 when it has fewer results
