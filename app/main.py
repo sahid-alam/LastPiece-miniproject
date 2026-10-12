@@ -83,6 +83,13 @@ def _cfg_get(cfg: dict, *keys, default=None):
 _MODE = os.environ.get("DATA_MODE", "synthetic").strip().lower()
 _REAL_MODE = _MODE == "real"
 
+if _REAL_MODE:
+    os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")  # must be set before torch loads
+    try:
+        import torch  # noqa: F401 load before faiss, or text search crashes on macOS (#11)
+    except ImportError:
+        pass
+
 # --------------------------------------------------------------------------- #
 # Index factory                                                                #
 # --------------------------------------------------------------------------- #
@@ -458,8 +465,36 @@ def main() -> None:
         st.subheader("Select a product to find similar available pieces")
 
         if _REAL_MODE:
-            # Show a small random sample from the manifest for selection.
-            sample_ids = list(manifest_by_id.keys())[:60]
+            # Category selection dropdown & deterministic shuffle for 24 items (#11)
+            categories = sorted([c for c in manifest["category"].dropna().unique() if str(c).strip()])
+            col_cat, col_shuf = st.columns([3, 1])
+            with col_cat:
+                selected_cat = st.selectbox(
+                    "Filter by category",
+                    options=categories,
+                    key="real_category_select",
+                )
+            with col_shuf:
+                st.write("")
+                st.write("")
+                if st.button("🔀 Shuffle", key="real_shuffle_btn"):
+                    st.session_state.real_grid_seed = int(np.random.randint(0, 1_000_000))
+                    st.rerun()
+
+            cfg = _load_config()
+            default_seed = _cfg_get(cfg, "project", "random_seed", default=42)
+            if "real_grid_seed" not in st.session_state:
+                st.session_state.real_grid_seed = default_seed
+
+            cat_df = manifest[manifest["category"] == selected_cat]
+            if cat_df.empty:
+                cat_df = manifest
+
+            # Sample 24 items deterministically using session seed
+            n_sample = min(24, len(cat_df))
+            sample_df = cat_df.sample(n=n_sample, random_state=st.session_state.real_grid_seed)
+            sample_ids = sample_df["item_id"].tolist()
+
             _render_real_grid(
                 sample_ids, manifest_by_id, raw_dir,
                 st.session_state.selected_id
