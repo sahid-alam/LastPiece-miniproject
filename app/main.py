@@ -573,7 +573,7 @@ def _render_real_grid(
                 img_bytes = _placeholder_bytes()
 
             col.image(img_bytes, width=80)
-            col.caption(f"**{title[:30]}**")
+            col.caption(f"**{title[:30].strip()}**")  # strip: "**x **" would not render bold
             col.caption(f"`{item_id}`")
             is_selected = item_id == selected_id
             label = "✓ Selected" if is_selected else "Select"

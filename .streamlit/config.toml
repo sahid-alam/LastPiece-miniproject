@@ -1,0 +1,6 @@
+# Demo polish: hide the "Deploy" button and dev menu during the review.
+[client]
+toolbarMode = "minimal"
+
+[theme]
+base = "light"
